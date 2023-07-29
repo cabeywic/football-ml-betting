@@ -1,0 +1,5 @@
+numpy
+pandas
+scipys
+piny
+PyYAML==6.0
