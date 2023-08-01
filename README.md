@@ -36,13 +36,13 @@ data:
 Clone the project
 
 ```bash
-  git clone https://github.com/quantsportstrading/qst-strategies
+  git clone https://github.com/cabeywic/football-ml-betting
 ```
 
 After cloning the repo run the below command, to install dependencies and create a logs folder. 
 
 ```bash
-cd qst-strategies
+cd football-ml-betting
 pip install -r requirements.txt
 ```
 
