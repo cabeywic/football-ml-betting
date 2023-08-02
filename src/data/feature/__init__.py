@@ -3,3 +3,4 @@ from data.feature.elo_rating import EloRatingGenerator
 from data.feature.pi_rating import PiRatingGenerator
 from data.feature.gap_rating import GapRatingGenerator
 from data.feature.win_streak import WinStreakGenerator
+from data.feature.over_under import OverUnderGenerator
