@@ -40,3 +40,9 @@ class ClassifierComparison:
             return max(self.scores, key=self.scores.get)
         else:
             return min(self.scores, key=self.scores.get)
+
+    def top_n_classifiers(self, n, greater_is_better=True):
+        sorted_scores = sorted(self.scores.items(), key=lambda x: x[1], reverse=greater_is_better)
+        top_n_names = [name for name, score in sorted_scores[:n]]
+        top_n_classifiers = {name: self.classifiers[name] for name in top_n_names}
+        return top_n_classifiers

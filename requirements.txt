@@ -3,3 +3,6 @@ pandas
 scipys
 piny
 PyYAML==6.0
+xgboost
+catboost
+lightgbm

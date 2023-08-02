@@ -26,7 +26,7 @@ class KellyCriterionStrategy(BettingStrategy):
         self.bookmakers = bookmakers
         self.bet_on_all = bet_on_all
     
-    def _place_bet(self, match: int, match_result: int, bet_type: BetType, prob_pred: float, odds: float):
+    def _place_bet(self, match: int, match_result: int, bet_type: BetType, prob_pred: float, prob_odds: float, odds: float):
         """
         Place a bet based on the Kelly Criterion.
 
@@ -36,9 +36,6 @@ class KellyCriterionStrategy(BettingStrategy):
         :param prob_pred: The estimated probability of winning the bet.
         :param odds: The betting odds.
         """
-        # Convert the odds to probabilities
-        prob_odds = self._odds_to_probability(odds)
-
         # If the estimated probability is greater than the odds-implied probability, place a bet
         if prob_pred > prob_odds:
             stake = self._kelly_criterion(prob_pred, odds) * self.bankroll
@@ -102,6 +99,8 @@ class KellyCriterionStrategy(BettingStrategy):
             bet_types = [BetType.HOME.value, BetType.DRAW.value, BetType.AWAY.value]
 
             probabilities_pred = [model.predict_proba(features.iloc[i:i+1])[0][bet_type] for bet_type in self.label_encoder.transform(bet_types)]
+            probabilities_odds = self._odds_to_probability(odds)
+
             expected_returns = [self._expected_value(prob_pred, odd) for prob_pred, odd in zip(probabilities_pred, odds)]
 
             if self.bet_on_all:
@@ -117,6 +116,7 @@ class KellyCriterionStrategy(BettingStrategy):
                     result.iloc[i], 
                     bet_types[best_outcome_index], 
                     probabilities_pred[best_outcome_index], 
+                    probabilities_odds[best_outcome_index],
                     odds[best_outcome_index]
                 )
 

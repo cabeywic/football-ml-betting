@@ -24,10 +24,7 @@ class ConfidenceThresholdStrategy(BettingStrategy):
         best_odds_away = max(match_features[[bookmaker + 'A' for bookmaker in bookmakers]])
         return best_odds_home, best_odds_draw, best_odds_away
 
-    def _place_bet(self, match: int, match_result: int, bet_type: BetType, prob_pred: float, odds: float):
-        # Convert the odds to probabilities
-        prob_odds = self._odds_to_probability(odds)
-
+    def _place_bet(self, match: int, match_result: int, bet_type: BetType, prob_pred: float, prob_odds:float, odds: float):
         # Only place a bet if our model's confidence is above the threshold and is greater than the odds-implied probability
         if prob_pred > self.confidence_threshold and prob_pred > prob_odds:
             # Bet a fixed stake
@@ -61,6 +58,7 @@ class ConfidenceThresholdStrategy(BettingStrategy):
             odds = [odds_home, odds_draw, odds_away]
 
             probabilities_pred = [model.predict_proba(features.iloc[i:i+1])[0][bet_type] for bet_type in self.label_encoder.transform(bet_types)]
+            probabilities_odds = self._odds_to_probability(odds)
             
             best_prob_pred = max(probabilities_pred)
 
@@ -72,6 +70,7 @@ class ConfidenceThresholdStrategy(BettingStrategy):
                     i, 
                     result.iloc[i], 
                     bet_types[best_prob_pred_idx], 
-                    probabilities_pred[best_prob_pred_idx], 
+                    probabilities_pred[best_prob_pred_idx],
+                    probabilities_odds[best_prob_pred_idx],
                     odds[best_prob_pred_idx]
                 )
