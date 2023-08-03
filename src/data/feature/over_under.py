@@ -16,6 +16,6 @@ class OverUnderGenerator(FeatureGenerator):
         
         # Generate over/under columns
         for value in self.over_under_values:
-            df_updated[f'FTG>{value}'] = df_updated['FTG'].apply(lambda x: 1 if x > value else 0)
+            df_updated[f'FTGOver{value}'] = df_updated['FTG'].apply(lambda x: 1 if x > value else 0)
 
         return df_updated
