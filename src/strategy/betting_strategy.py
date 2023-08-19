@@ -3,6 +3,7 @@ from typing import List
 from enum import Enum
 import pandas as pd
 import numpy as np
+from math import sqrt
 from scipy.stats import norm
 
 
@@ -31,6 +32,40 @@ class BettingStrategy(ABC):
         probabilities = [1 / odd for odd in odds]
         overround = sum(probabilities)
         probabilities_adjusted = [prob / overround for prob in probabilities]
+        return probabilities_adjusted
+    
+    def _shin_odds_to_probability(
+        odds: List[float],
+        max_iterations: int = 1000,
+        convergence_threshold: float = 1e-12) -> dict:
+        if len(odds) < 2:
+            raise ValueError('len(odds) must be >= 2')
+
+        if any(o < 1 for o in odds):
+            raise ValueError('All odds must be >= 1')
+
+        z = 0
+        n = len(odds)
+        inverse_odds = [1.0 / o for o in odds]
+        sum_inverse_odds = sum(inverse_odds)
+        delta = float('Inf')
+        iterations = 0
+
+        if n == 2:
+            diff_inverse_odds = inverse_odds[0] - inverse_odds[1]
+            z = (
+                    ((sum_inverse_odds - 1) * (diff_inverse_odds ** 2 - sum_inverse_odds)) /
+                    (sum_inverse_odds * (diff_inverse_odds ** 2 - 1))
+            )
+            delta = 0
+        else:
+            while delta > convergence_threshold and iterations < max_iterations:
+                z0 = z
+                z = (sum(sqrt(z ** 2 + 4 * (1 - z) * io ** 2 / sum_inverse_odds) for io in inverse_odds) - 2) / (n - 2)
+                delta = abs(z - z0)
+                iterations += 1
+
+        probabilities_adjusted = [(sqrt(z ** 2 + 4 * (1 - z) * io ** 2 / sum_inverse_odds) - z) / (2 * (1 - z)) for io in inverse_odds]
         return probabilities_adjusted
     
     def _expected_value(self, p: float, odds: float) -> float:
@@ -70,15 +105,6 @@ class BettingStrategy(ABC):
         
         volatility = history['ProfitLoss'].std()
         std_dev_returns = returns.std()
-
-        # Value at Risk (VaR): This is a measure of the risk of potential losses. It's typically calculated as the worst 
-        # loss that you could expect to occur with a certain level of confidence (e.g., 95% or 99%) over a certain period. 
-        # VaR_95 = norm.ppf(1-0.95, np.mean(returns), std_dev_returns)
-
-        # running_total = history['ProfitLoss'].cumsum()
-        # running_max = running_total.cummax()
-        # drawdown = running_max - running_total
-        # max_drawdown = drawdown.max()
 
         return {
             'Total Profit': total_profit,
