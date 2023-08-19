@@ -7,6 +7,7 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class ClassifierComparison:
     def __init__(self, classifiers: Dict[str, ClassifierMixin], use_standard_scaler: bool = True):
         if use_standard_scaler:
