@@ -76,7 +76,10 @@ class BettingStrategy(ABC):
         :param odds: The betting odds.
         :return: The expected value of the bet.
         """
-        return (p * odds) - (1 - p)
+        # potential_profit = odds - 1
+        # potential_loss = 1
+        # EV = (p * potential_profit) - (p * potential_loss)
+        return (p * odds) - 1
     
     def get_historical_returns(self) -> pd.Series:
         return self.history['ProfitLoss'] / (self.history['Bankroll'] - self.history['ProfitLoss'])

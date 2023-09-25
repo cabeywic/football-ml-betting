@@ -13,7 +13,7 @@ class KellyCriterionStrategy(BettingStrategy):
 
     The strategy places a bet if the estimated probability of winning is greater than the odds-implied probability. 
     """
-    def __init__(self, label_encoder: LabelEncoder, initial_bankroll: int=1000, bookmakers: List[str]=['B365', 'IW', 'BW'], bet_on_all: bool=False):
+    def __init__(self, label_encoder: LabelEncoder, initial_bankroll: int=1000, bookmakers: List[str]=['B365', 'IW', 'BW', 'PS'], bet_on_all: bool=False):
         """
         Initialize the KellyCriterionStrategy.
 
@@ -109,16 +109,16 @@ class KellyCriterionStrategy(BettingStrategy):
             else:
                 # Get the index of the outcome with the highest expected return
                 best_outcome_index = expected_returns.index(max(expected_returns))
-
-                # Place a bet on this outcome
-                self._place_bet(
-                    i, 
-                    result.iloc[i], 
-                    bet_types[best_outcome_index], 
-                    probabilities_pred[best_outcome_index], 
-                    probabilities_odds[best_outcome_index],
-                    odds[best_outcome_index]
-                )
+                if max(expected_returns) > 0:
+                    # Place a bet on this outcome
+                    self._place_bet(
+                        i, 
+                        result.iloc[i], 
+                        bet_types[best_outcome_index], 
+                        probabilities_pred[best_outcome_index], 
+                        probabilities_odds[best_outcome_index],
+                        odds[best_outcome_index]
+                    )
 
 
 class FractionalKellyCriterionStrategy(KellyCriterionStrategy):
@@ -139,7 +139,7 @@ class FractionalKellyCriterionStrategy(KellyCriterionStrategy):
     to betting.
     """
 
-    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW'], fraction: float=0.05):
+    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW', 'PS'], fraction: float=0.05):
         super().__init__(label_encoder, initial_bankroll, bookmakers)
         self.fraction = fraction
 
@@ -156,7 +156,7 @@ class FractionalKellyCriterionStrategy(KellyCriterionStrategy):
 
 
 class AdaptiveFractionalKellyCriterionStrategy(FractionalKellyCriterionStrategy):
-    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW'], base_fraction: float=0.05, window_size=5):
+    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW', 'PS'], base_fraction: float=0.05, window_size=5):
         super().__init__(label_encoder, initial_bankroll, bookmakers, base_fraction)
         self.base_fraction = base_fraction
         self.window_size = window_size  # the number of recent games to consider for adjusting the fraction
@@ -209,7 +209,7 @@ class DynamicFractionalKellyCriterionStrategy(KellyCriterionStrategy):
     This approach provides a balance between risk and return, aiming to maximize long-term growth of the bankroll 
     while reducing the risk of ruin.
     """
-    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW'], low_threshold: float=200, high_threshold: float=2000, min_fraction: float=0.05, max_fraction: float=0.25):
+    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers=['B365', 'IW', 'BW', 'PS'], low_threshold: float=200, high_threshold: float=2000, min_fraction: float=0.05, max_fraction: float=0.25):
         super().__init__(label_encoder, initial_bankroll, bookmakers)
         self.low_threshold = low_threshold
         self.high_threshold = high_threshold
@@ -224,22 +224,27 @@ class DynamicFractionalKellyCriterionStrategy(KellyCriterionStrategy):
         :param prob_odds: The odds-implied probability.
         :return: The fraction to use.
         """
-        # Determine the base fraction based on the current bankroll
-        if self.bankroll > self.high_threshold:
-            base_fraction = self.max_fraction
-        elif self.bankroll < self.low_threshold:
+        # Calculate perceived risk as the absolute difference between predicted probability and odds-implied probability
+        perceived_risk = abs(prob_pred - prob_odds)
+        
+        # Base fraction is determined by bankroll position between low and high thresholds
+        if self.bankroll <= self.low_threshold:
             base_fraction = self.min_fraction
+        elif self.bankroll >= self.high_threshold:
+            base_fraction = self.max_fraction
         else:
-            # Calculate the base fraction for betting, which scales linearly from min_fraction to max_fraction as our 
-            # bankroll increases from low_threshold to high_threshold. This allows us to bet more when our bankroll is 
-            # larger and less when our bankroll is smaller.
-            base_fraction = ((self.bankroll - self.low_threshold) / (self.high_threshold - self.low_threshold)) * (self.max_fraction - self.min_fraction) + self.min_fraction
+            fraction_range = self.max_fraction - self.min_fraction
+            scale = (self.bankroll - self.low_threshold) / (self.high_threshold - self.low_threshold)
+            base_fraction = self.min_fraction + fraction_range * scale
 
-        # Adjust the fraction based on the perceived risk of the bet
-        risk_adjustment = abs(prob_pred - prob_odds)
-        fraction = base_fraction * risk_adjustment
-
-        return fraction
+        # Exponential adjustment
+        risk_adjusted_fraction = base_fraction * (0.5 ** (perceived_risk * 0.5))  # This will have a milder effect than the previous version
+        
+        # Add a fixed fraction
+        final_fraction = risk_adjusted_fraction + 0.05
+        
+        # Ensure the resulting fraction is bounded within [min_fraction, max_fraction]
+        return min(max(final_fraction, self.min_fraction), self.max_fraction)
 
     def _kelly_criterion(self, p: float, r: float) -> float:
         """

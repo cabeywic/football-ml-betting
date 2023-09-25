@@ -26,10 +26,13 @@ class ClassifierComparison:
             self.scores[name] = score
 
     def plot_scores(self):
-        classifier_names = list(self.scores.keys())
-        scores = list(self.scores.values())
+        sorted_items = sorted(self.scores.items(), key=lambda x: x[1], reverse=False)
+    
+        # Extract names and scores from sorted items
+        classifier_names = [item[0] for item in sorted_items]
+        scores = [item[1] for item in sorted_items]
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(12, 3))
         plt.bar(classifier_names, scores)
         plt.xlabel('Classifiers')
         plt.ylabel('Score')

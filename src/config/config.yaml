@@ -3,6 +3,7 @@ data:
   division_names:
     - E0
     - E1
+    - SP1
   years:
     - 2015-2016
     - 2016-2017

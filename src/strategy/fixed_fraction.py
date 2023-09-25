@@ -11,11 +11,25 @@ class FixedFractionalStrategy(BettingStrategy):
     Fixed Fractional Betting uses a consistent stake size which reduces the risk of huge losses. 
     This strategy is particularly useful when you want to limit the potential losses and maintain a slow and steady bankroll growth.
     """
-    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers: List[str]=['B365', 'IW', 'BW'], fraction: float=0.05):
+    def __init__(self, label_encoder: LabelEncoder, initial_bankroll=1000, bookmakers: List[str]=['B365', 'IW', 'BW', 'PS'], fraction: float=0.05):
         super().__init__(initial_bankroll)
         self.fraction = fraction
         self.bookmakers = bookmakers
         self.label_encoder = label_encoder
+
+    def _get_odds(self, match_features: pd.Series, bookmaker: str) -> tuple:
+        """
+        Retrieve the Home, Draw, and Away odds for a specific bookmaker from a given DataFrame match_features.
+
+        :param match_features: The match_features in the DataFrame representing a match.
+        :param bookmaker: The bookmaker's code (e.g., 'B365').
+        :return: A tuple containing the odds for Home, Draw, and Away, in that order.
+        """
+        home_odds = match_features[f'{bookmaker}H']
+        draw_odds = match_features[f'{bookmaker}D']
+        away_odds = match_features[f'{bookmaker}A']
+        
+        return home_odds, draw_odds, away_odds
 
     def _get_best_odds(self, match_features: pd.Series) -> tuple:
         """
@@ -67,6 +81,11 @@ class FixedFractionalStrategy(BettingStrategy):
 
             if best_expected_return > 0:
                 # Place a bet on this outcome
+                # print("ODDS: ", odds)
+                # print("Pred Prob: ", probabilities_pred)
+                # print("Expected Return: ", expected_returns)
+                # print("Best Outcome: ", bet_types[best_outcome_index], result.iloc[i])
+                # print("-"*50)
                 self._place_bet(
                     i, 
                     result.iloc[i], 
